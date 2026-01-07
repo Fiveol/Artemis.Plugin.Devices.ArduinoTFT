@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using RGB.NET.Core;
 
 namespace Artemis.Plugin.Devices.ArduinoTFT
@@ -10,42 +9,55 @@ namespace Artemis.Plugin.Devices.ArduinoTFT
         IReferenceCounting
     {
         private readonly System.IO.Ports.SerialPort _serialPort;
-        private int _referenceCount;
+        private int _refCount;
 
         public ArduinoTftUpdateQueue(System.IO.Ports.SerialPort serialPort)
         {
-            _serialPort = serialPort ?? throw new ArgumentNullException(nameof(serialPort));
+            _serialPort = serialPort;
         }
 
         public bool RequiresFlush => false;
 
-        public int ActiveReferenceCount => _referenceCount;
+        public int ActiveReferenceCount => _refCount;
 
         public void AddReferencingObject(object obj)
-            => Interlocked.Increment(ref _referenceCount);
+        {
+            _refCount++;
+        }
 
         public void RemoveReferencingObject(object obj)
-            => Interlocked.Decrement(ref _referenceCount);
-
-        public void Reset()
         {
+            _refCount--;
         }
 
-        public void Dispose()
-        {
-        }
+        public void Reset() { }
+
+        public void Dispose() { }
 
         public void SetData(ReadOnlySpan<(object, Color)> dataSet)
         {
+            // Do not send LED updates until handshake is complete
+            if (!ArduinoTftRgbDeviceProvider.Instance.Ready)
+                return;
+
             if (!_serialPort.IsOpen)
                 return;
 
-            byte[] buffer = new byte[dataSet.Length * 3];
+            byte[] buffer = new byte[dataSet.Length * 5];
             int i = 0;
 
             foreach (var entry in dataSet)
             {
-                Color c = entry.Item2; // floats 0–1
+                var led = (Led)entry.Item1;
+                var (x, y) = ((int x, int y))led.CustomData!;
+
+                // 1-based LED ID
+                int id = y * 32 + x + 1;
+
+                buffer[i++] = (byte)(id & 0xFF);
+                buffer[i++] = (byte)((id >> 8) & 0xFF);
+
+                Color c = entry.Item2;
 
                 buffer[i++] = (byte)(c.R * 255f);
                 buffer[i++] = (byte)(c.G * 255f);
@@ -58,7 +70,7 @@ namespace Artemis.Plugin.Devices.ArduinoTFT
             }
             catch
             {
-                // ignore transient serial errors
+                // Ignore transient serial errors
             }
         }
     }

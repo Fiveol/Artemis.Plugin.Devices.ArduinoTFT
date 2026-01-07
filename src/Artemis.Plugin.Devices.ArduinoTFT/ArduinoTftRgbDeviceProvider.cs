@@ -18,21 +18,24 @@ namespace Artemis.Plugin.Devices.ArduinoTFT
 
         public bool IsInitialized { get; private set; }
         public bool ThrowsExceptions { get; private set; }
+        public bool Ready { get; private set; }
 
         public IReadOnlyList<IRGBDevice> Devices => _devices;
-
         public IReadOnlyList<(int id, IDeviceUpdateTrigger trigger)> UpdateTriggers => _triggers;
 
         public event EventHandler<ExceptionEventArgs>? Exception;
         public event EventHandler<DevicesChangedEventArgs>? DevicesChanged;
 
-        private ArduinoTftRgbDeviceProvider()
-        {
-        }
+        private ArduinoTftRgbDeviceProvider() { }
 
         public void AttachSerialPort(System.IO.Ports.SerialPort port)
         {
             _serialPort = port;
+        }
+
+        public void SetReady()
+        {
+            Ready = true;
         }
 
         public bool Initialize(RGBDeviceType loadFilter = RGBDeviceType.All, bool throwExceptions = false)
