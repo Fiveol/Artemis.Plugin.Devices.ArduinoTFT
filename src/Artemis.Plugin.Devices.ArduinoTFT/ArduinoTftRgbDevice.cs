@@ -7,6 +7,7 @@ namespace Artemis.Plugin.Devices.ArduinoTFT
     {
         private const int WIDTH = 32;
         private const int HEIGHT = 24;
+        private const int LED_SIZE = 8;
 
         public ArduinoTftRgbDevice(ArduinoTftUpdateQueue queue)
             : base(new ArduinoTftDeviceInfo(), queue)
@@ -16,7 +17,7 @@ namespace Artemis.Plugin.Devices.ArduinoTFT
 
         private void InitializeLeds()
         {
-            int index = 0; // 0 -> LedMatrix1
+            int index = 0;
 
             for (int y = 0; y < HEIGHT; y++)
             {
@@ -26,8 +27,8 @@ namespace Artemis.Plugin.Devices.ArduinoTFT
 
                     AddLed(
                         ledId,
-                        new Point(x, y),
-                        new Size(1, 1),
+                        new Point(x * LED_SIZE, y * LED_SIZE),
+                        new Size(LED_SIZE, LED_SIZE),
                         customData: (x, y)
                     );
 
